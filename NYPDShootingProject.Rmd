@@ -5,6 +5,9 @@ date: "2025-10-21"
 output: html_document
 ---
 
+# Please install these packages: use this or do it yourself install.packages(c("dplyr", "lubridate", "ggplot2", "knitr", "rmarkdown"))
+# Thank you!
+
 ## Introduction
 
 This report analyzes the NYPD Shooting Incident Historic dataset to explore trends in shooting incidents across New York City. The dataset includes information such as the date, time, borough, and the demographic characteristics of both victims and perpetrators. By looking into when and among whom these incidents occur, we can find meaningful patterns related to crime timing, frequency, and racial relationships.
