@@ -1,0 +1,162 @@
+---
+title: "NYPDShooting"
+author: "Jordan Nguyen"
+date: "2025-10-21"
+output: html_document
+---
+
+## Introduction
+
+This report analyzes the NYPD Shooting Incident Historic dataset to explore trends in shooting incidents across New York City. The dataset includes information such as the date, time, borough, and the demographic characteristics of both victims and perpetrators. By looking into when and among whom these incidents occur, we can find meaningful patterns related to crime timing, frequency, and racial relationships.
+The goal of this analysis is to find patterns (how shootings vary by year, season, and time of day) and demographic relationships (how the races of victims and perpetrators are related).  
+Through data cleaning, visualization, and interpretation, this project provides insight into broader social and environmental factors that may influence the occurrence of shootings in NYC.
+
+
+## Data Overview
+
+### Reading in the data
+
+I have read in the NYPD Shooting inceident data and have done a quick summary without any changes to the data so far
+```{r}
+data <- read.csv("NYPD_Shooting_Incident_Data__Historic_.csv")
+
+summary(data)
+```
+
+### Showing the columns and rows in the dataset
+
+```{r}
+
+library(dplyr)
+
+data_clean <- data %>%
+  select(-Latitude, -Longitude, -Lon_Lat, -X_COORD_CD, -Y_COORD_CD, -LOC_CLASSFCTN_DESC, -JURISDICTION_CODE, -LOC_CLASSFCTN_DESC, -PRECINCT)
+head(data_clean)
+```
+
+## Visualizations
+### When are these deaths occuring
+I will clean the data and show a table to visualize when these crimes are occuring to see if there is a trend in years, then i will amke a graph to see if crimes are seasonal, and then i will make a graph showcasing the time of these crimes to see if there are more crimes at night vs during the day
+
+
+
+```{r}
+library(dplyr)
+library(lubridate)
+
+data_clean <- data_clean %>%
+  mutate(
+    OCCUR_DATE = mdy(OCCUR_DATE),                     # convert to Date
+    OCCUR_TIME = hms(OCCUR_TIME),                     # convert to time
+    year = year(OCCUR_DATE),                          # extract year
+    month = month(OCCUR_DATE, label = TRUE),          # extract month (as label)
+    hour = hour(OCCUR_TIME)                           # extract hour
+  )
+
+yearly_crimes <- data_clean %>%
+  count(year, name = "num_crimes") %>%
+  arrange(year)
+
+yearly_crimes
+
+library(ggplot2)
+
+# Crimes by year
+ggplot(yearly_crimes, aes(x = year, y = num_crimes)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Crimes by Year",
+       x = "Year",
+       y = "Number of Crimes")
+
+# Crimes by month (to check for seasonality)
+ggplot(data_clean, aes(x = month)) +
+  geom_bar() +
+  labs(title = "Crimes by Month",
+       x = "Month",
+       y = "Number of Crimes")
+
+data_clean <- data_clean %>%
+  mutate(
+    time_of_day = case_when(
+      hour >= 6 & hour < 18 ~ "Day",
+      TRUE ~ "Night"
+    )
+  )
+
+ggplot(data_clean, aes(x = time_of_day)) +
+  geom_bar(fill = "steelblue") +
+  labs(title = "Crimes: Day vs Night",
+       x = "Time of Day",
+       y = "Number of Crimes")
+
+
+```
+As you can see by the graphs that when the crime rates are the highest is before 2012 and then there was a huge spike during 2020 and 2021. After doing more research into what was happening during the years of 2020 and 2021 i have come to realize that that was the time of COVID 19. Becuase of the economic hardships and the increased tension with the pandemic people could have resorted to commiting more crimes. During this time too the George Floyd incident happened. After this there was a decrease in law enforcement trust. People began rioting which in turn can be a cause of the fluxuation in crimes. After 2021 crimes began to stabilize and or decline again.
+
+For the second graph we are able to see the number of crimes compared to the months. We are able to noticed that the crimes are highest during the months of June, July, and August while the lowest number of crimes per month are in January, Febuary, and March. The reason for this can be because during the wintr months it is too cold to commit crimes. During that time a lot of people are home and dont want to do as much compared to the summer times where people are more active.
+
+The last graph showcases the number of crimes during the day vs the number of crimes during night. We are able to conclude that most crimes are committed during the night vs during the day. The reason for this is because during the night time, there are not as many people out and there are a lot less witnesses. It is also a lot easier to get away with a crime during night vs during the day.
+
+### Where are Crimes Being Commited and Who
+
+These next 3 graphs will showcase where are most people getting killed, as in which borough. How old the victims are. Lastly, we are seeing race of the victims vs the race of the perpetrator
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+# Count by borough
+boro_shoots <- data_clean %>%
+  count(BORO, name = "num_shootings") %>%
+  arrange(desc(num_shootings))
+
+ggplot(boro_shoots, aes(x = reorder(BORO, num_shootings), y = num_shootings, fill = BORO)) +
+  geom_col(show.legend = FALSE) +
+  labs(title = "Total Shootings by Borough",
+       x = "Borough", y = "Number of Shootings")
+
+
+
+
+# Victim age group distribution
+ggplot(data_clean, aes(x = VIC_AGE_GROUP)) +
+  geom_bar(fill = "skyblue") +
+  labs(title = "Victim Age Group Distribution", x = "Victim Age Group", y = "Count") +
+  theme_minimal()
+
+library(ggplot2)
+library(dplyr)
+
+data_clean %>%
+  count(PERP_RACE, VIC_RACE) %>%
+  ggplot(aes(x = PERP_RACE, y = n, fill = VIC_RACE)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(
+    title = "Victim vs Perpetrator Race Relationship",
+    x = "Perpetrator Race",
+    y = "Number of Incidents",
+    fill = "Victim Race"
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+The first graphs shows the shootings by borough. As we can see the most total shootings by borough is in Brookyn while the least amount of shootings would be in Staten Island. The difference between the two are about 10,500 roughly. This is very significant and shows how Staten Island is much safer than Brooklyn as there are fewer crimes that happen there.
+
+Based off the second graph we are able to see the ages of the different victim groups. The ages that have the most victims are between the ages of 25-44 while the next group would be between the ages of 18-24. When looking at the bins of the age groups i notice that the groups are so weird.
+
+The last graph that i have created is loooking at the races of victims vs the race of the perpetrators. We are able to see that the largest number of incidents occur when both victims and perpetrators are black, this suggests that crime involving black oeroetrators are oredominantly intra-racial. We are also able to see that both white perpetrators and victims are the next bar while still being significantly smaller compared to the black/black combination.
+
+## Conclusion
+
+Through this analysis of the NYPD Shooting Incident Historic dataset, several clear patterns emerge.  
+First, the trends suggest that shootings vary over time, with certain years showing higher frequencies of incidents. The breakdown by month and hour indicates that shootings tend to occur more frequently during warmer months and late at night, suggesting both seasonal and situational influences.
+
+When examining the relationship between victims and perpetrators, the data reveals a strong intra-racial pattern. Most incidents occur between individuals of the same racial group, particularly among Black victims and perpetrators, while cross-racial incidents are relatively uncommon. This shows broader sociological research showing that most violent crimes occur within, rather than across, racial groups.
+
+Lastly there can be many different biases as sometimes people dont report these crimes/ shootings. And in other cases they could be reporting fasle cases. There also is a lot of different biases in Things such as racial, geographical and situational biases need to be taken into account. 
+
+Overall, this analysis highlights how shooting incidents in New York City are shaped by time, environment, and demographics.  
+Future research could explore how these patterns vary across boroughs, whether specific policy changes affected yearly trends, and how socioeconomic factors contribute to these disparities. Understanding these dynamics is essential for creating data-driven approaches to violence prevention and community safety.
